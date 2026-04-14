@@ -1,0 +1,21 @@
+# Ignore Python temporary files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore development environment
+.venv/
+env/
+venv/
+.env
+
+# Ignore Git
+.git
+.gitignore
+
+# Ignore local testing logs
+test_results.log
+*.log
+
+# Ignore large raw datasets (they are already in 'exports' or handled)
+*.csv

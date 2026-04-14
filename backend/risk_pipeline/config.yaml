@@ -1,0 +1,40 @@
+# ------------------------------------------------------------------
+# Paths
+# ------------------------------------------------------------------
+data_path: "BALANCED_FROM_8136_TO_10K.csv"   # dataset in the same folder
+export_dir: "./exports"                        # created automatically
+
+# ------------------------------------------------------------------
+# Model / training hyper-parameters
+# ------------------------------------------------------------------
+tfidf:
+  max_features: 10000
+  ngram_range: [1, 2]
+
+lightgbm:
+  solver: "lbfgs"        # Keep for legacy config parsing if needed, but not actively used
+  max_iter: 1000
+  class_weight: "balanced"
+
+finbert:
+  model_name: "ProsusAI/finbert"
+  max_length: 256
+  batch_size: 16
+  epochs: 3
+  learning_rate: 2e-5
+  early_stop_patience: 1
+
+# ------------------------------------------------------------------
+# Alpha search space (weights for LightGBM side of fusion)
+# ------------------------------------------------------------------
+alpha_candidates: [0.3, 0.4, 0.5, 0.6, 0.7]
+
+# ------------------------------------------------------------------
+# Acceptance criteria
+# ------------------------------------------------------------------
+criteria:
+  lightgbm_macro_f1: 0.70
+  finbert_macro_f1: 0.70
+  finbert_overfit_gap: 0.10
+  hybrid_class_f1_min: 0.60
+  inference_latency_ms: 800

@@ -1,0 +1,18 @@
+# Self-contained dependencies for the Risk Pipeline
+fastapi
+uvicorn[standard]
+pydantic
+pandas
+numpy
+scikit-learn
+torch
+transformers
+lightgbm
+joblib
+pyyaml
+requests
+httpx
+groq
+google-generativeai
+python-dotenv
+gunicorn
