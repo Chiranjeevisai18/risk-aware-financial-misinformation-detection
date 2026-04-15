@@ -1,0 +1,31 @@
+### 1. Financial Agent (Port 9000)
+### Health check
+GET http://localhost:9000/health
+
+### News query
+POST http://localhost:9000/api/news
+Content-Type: application/json
+
+{
+  "query": "Summarize the latest market news regarding the rupee falling against dollar and also currency exchange rate of dollar and rupee.",
+  "reset": true
+}
+
+### 2. Risk Pipeline (Port 8000)
+### Safety Check
+POST http://localhost:8000/v1/is-safe
+Content-Type: application/json
+
+{
+  "text": "This is a guaranteed 20% daily return investment opportunity."
+}
+
+### 3. Production Check
+POST https://financial-agent-deploy-1.onrender.com/api/news
+Content-Type: application/json
+
+{
+  "query": "Give me the top crypto headlines today.",
+  "reset": true
+}
+
