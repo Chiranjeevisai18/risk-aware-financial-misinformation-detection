@@ -1,0 +1,10 @@
+INFO:     Started server process [768]
+INFO:     Waiting for application startup.
+[API] Initial LightGBM check: OK (version 4.6.0)
+[API] Initializing Hybrid Risk Classifier Models...
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights:  29%|██▉       | 58/201 [00:00<00:00, 572.31it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 1049.99it/s]
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8000): address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+[API] Models Loaded Successfully. Alpha=0.4
