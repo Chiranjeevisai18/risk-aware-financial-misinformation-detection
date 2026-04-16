@@ -58,12 +58,19 @@ async def _filter_response(result: dict) -> dict:
     """
     risk_filtered = False
 
+    # Bypass filter for general conversation or generated error messages
+    if result.get("type") == "general" or result.get("answer", "").startswith("⚠️"):
+        return result
+
     answer = result.get("answer", "")
-    if answer and not await _is_safe(answer):
+    # Check only the first sentence of the answer to avoid false positives from long/noisy text
+    import re
+    first_sentence = re.split(r'[.!?]\s', answer)[0].strip() if answer else ""
+    if first_sentence and not await _is_safe(first_sentence):
         result["answer"] = (
-            "⚠️ The retrieved information was flagged as potentially misleading "
-            "and has been withheld for your safety. Please consult a verified "
-            "financial source such as SEBI, RBI, or an authorised advisor."
+            "⚠️ The generated response was flagged for safety and has been condensed. "
+            "Some information has been withheld. Please consult a verified "
+            "financial source (SEBI/RBI) for final investment advice."
         )
         risk_filtered = True
 
@@ -71,7 +78,8 @@ async def _filter_response(result: dict) -> dict:
     if articles:
         safe_articles = []
         for article in articles:
-            check_text = f"{article.get('headline', '')} {article.get('summary', '')}"
+            # Send ONLY the headline to the risk pipeline for a more targeted safety check
+            check_text = article.get('headline', '')
             if await _is_safe(check_text):
                 safe_articles.append(article)
             else:
@@ -188,10 +196,14 @@ async def _run_agent(req: NewsRequest) -> dict:
         result = await _filter_response(result)
         return result
     except Exception as exc:
-        import traceback
-        traceback.print_exc()
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail=str(exc))
+        print(f"[server] ❌ Unexpected Error: {exc}")
+        return {
+            "type": "general",
+            "query": req.query,
+            "answer": f"⚠️ Service is temporarily unavailable. Please try again later. (Details: {str(exc)[:100]})",
+            "top_articles": [],
+            "error": str(exc)
+        }
 
 
 @app.post("/api/news")

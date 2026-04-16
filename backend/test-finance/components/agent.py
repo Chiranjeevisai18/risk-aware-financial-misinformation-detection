@@ -77,14 +77,32 @@ class FinancialAgent:
                     for msg in data:
                         role = msg.get("role")
                         text = msg.get("text", "")
+                        articles = msg.get("articles")
+                        
                         if role == "user":
                             self._history.append(HumanMessage(content=text))
                         elif role == "bot":
                             self._history.append(AIMessage(content=text))
+                            # Re-inject article context if present so follow-up questions work
+                            if articles:
+                                article_ctx = "Context - Articles found in this turn:\n"
+                                # 'articles' is retrieved as a list of dicts from Supabase JSONB
+                                for idx, art in enumerate(articles, 1):
+                                    h = art.get("headline") or art.get("title", "No title")
+                                    s = art.get("source", "N/A")
+                                    u = art.get("link") or art.get("url", "N/A")
+                                    article_ctx += f"{idx}. {h} (Source: {s}, URL: {u})\n"
+                                self._history.append(SystemMessage(content=article_ctx))
                     if data:
                         print(f"[agent] Re-loaded {len(data)} messages from Supabase for {self.session_id}")
         except Exception as e:
             print(f"[agent] Failed to load history from Supabase: {e}")
+
+    def _is_rate_limit_error(self, e: Exception) -> bool:
+        """Check if the error is a 429 rate limit or quota exhaustion message."""
+        msg = str(e).lower()
+        # Broad detection for any rate limit, quota, or exhaustion keywords
+        return any(k in msg for k in ["429", "rate limit", "quota", "exhausted", "resource_exhausted", "busy", "limit reached"])
 
     def _compile_graph(self):
         tool_node = ToolNode(self.tools)
@@ -110,10 +128,9 @@ class FinancialAgent:
 
             response = None
             error_reason = ""
-            use_fallback = False
-            
             # --- PHASE 1: TRY GROQ ---
-            use_fallback = True # FORCED FOR TESTING
+            use_fallback = False
+            response = None
             try:
                 print(f"[agent] Invoking Groq (Primary: llama-3.3-70b-versatile)...")
                 response = self.llm_groq.invoke(messages)
@@ -128,7 +145,6 @@ class FinancialAgent:
                     print(f"[agent] SUCCESS: Response received from Groq.")
             except Exception as e:
                 print(f"[agent] ⚠️ Groq Primary Failed: {e}")
-                error_reason = str(e)
                 use_fallback = True
 
             # --- PHASE 2: FALLBACK TO GEMINI ---
@@ -139,7 +155,13 @@ class FinancialAgent:
                     print(f"[agent] SUCCESS: Response received from Gemini Fallback.")
                 except Exception as e:
                     print(f"[agent] ❌ CRITICAL: Gemini fallback also failed: {e}")
-                    raise e # Both failed
+                    
+                    # Last resort: Always return a friendly message if both tools fail
+                    # rather than crashing the graph and showing raw errors to the user.
+                    response = AIMessage(content=(
+                        "⚠️ Service is temporarily busy due to high demand (Rate Limit reached on both Groq and Gemini). "
+                        "Please try again in about 15–20 minutes, or tomorrow if using the Gemini Free Tier."
+                    ))
 
             # DEBUG LOGGING
             if response.tool_calls:
@@ -167,8 +189,19 @@ class FinancialAgent:
             await self.load_history()
 
         initial_history = list(self._history)
-        result = await self._graph.ainvoke({"messages": [HumanMessage(content=user_input)]})
-        self._history = list(result["messages"])
+        try:
+            result = await self._graph.ainvoke({"messages": [HumanMessage(content=user_input)]})
+            self._history = list(result["messages"])
+        except Exception as e:
+            if self._is_rate_limit_error(e):
+                print(f"[agent] ⚠️ Graph level rate limit caught: {e}")
+                self._history.append(AIMessage(content=(
+                    "⚠️ Service is temporarily busy due to high demand (Rate Limit reached on both Groq and Gemini). "
+                    "Please try again in about 15–20 minutes, or tomorrow if using the Gemini Free Tier."
+                )))
+            else:
+                raise e # Re-raise unknown errors
+
         new_messages = self._history[len(initial_history)+1:]
 
         tool_names_used = {m.name for m in new_messages if isinstance(m, ToolMessage)}
@@ -207,13 +240,21 @@ class FinancialAgent:
             HumanMessage(content=extraction_prompt),
         ]
         
+        def _is_rate_limit_error(e: Exception) -> bool:
+            msg = str(e).lower()
+            return any(k in msg for k in ["429", "rate limit", "quota", "exhausted", "resource_exhausted"])
+
         # Try Groq first for extraction
         try:
             response = await self.base_llm_groq.ainvoke(messages_for_extraction)
-        except:
+        except Exception as e:
+            if self._is_rate_limit_error(e):
+                print("[agent] Groq extraction rate limited, trying Gemini...")
             response = await self.base_llm_gemini.ainvoke(messages_for_extraction)
 
         content = response.content.strip()
+        if "Service is temporarily busy" in content:
+            raise ValueError("Upstream models busy")
         match = re.search(r'(\{.*\})', content, re.DOTALL)
         if match:
              data = json.loads(match.group(1))

@@ -193,9 +193,9 @@ async def is_safe(request: IsSafeRequest):
         label_text = models['LABEL_MAP'][label_idx]
 
         return IsSafeResponse(
-            # Allow Safe (0) and Misleading (1) for chatbot purposes.
-            # Block High Risk (2) and Scam (3).
-            is_safe=label_idx in [0, 1],   
+            # Allow Safe (0), Misleading (1), and High Risk (2) for chatbot purposes.
+            # Only block blatant Scams (3).
+            is_safe=label_idx in [0, 1, 2],   
             label=label_text,
             risk_score=round(r_score, 4),
         )

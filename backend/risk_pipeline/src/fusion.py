@@ -78,7 +78,10 @@ def apply_scam_heuristics(text: str, probs: np.ndarray) -> tuple[np.ndarray, boo
     gatekeeper_pattern = r"(join|dm|message|group|exclusive).{1,100}(vip|private|insider|exclusive|secret|cash|signals|whatsapp|telegram)"
 
     # D. Extreme ROI (>1000% or "Guaranteed" + high %)
-    extreme_roi = re.search(r"([1-9][0-9]{2,})\s*%", text_clean) is not None # Changed to 3 digits (100%+) as a Hard Fraud if combined with certain words
+    # Only trigger if high percentage is linked to investment/profit context
+    roi_percentage = re.search(r"([1-9][0-9]{2,})\s*%", text_clean)
+    investment_context = any(w in text_clean for w in ["profit", "return", "yield", "apy", "invest", "bonus", "guaranteed"])
+    extreme_roi = (roi_percentage is not None) and investment_context
     guaranteed_high = ("guaranteed" in text_clean or "no risk" in text_clean or "risk free" in text_clean) and re.search(r"[0-9]{1,}\s*%", text_clean)
 
     # --- 2. Dynamic Thresholding & Pivoting ---

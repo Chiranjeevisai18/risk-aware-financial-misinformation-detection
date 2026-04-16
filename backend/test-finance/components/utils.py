@@ -76,14 +76,10 @@ When a user explicitly asks for news or market context:
 - If a tool fails (e.g., price returns 0), try an alternative symbol or use the lookup tool to verify the ticker.
 - NEVER fetch news just to pad a response. Only fetch if the query needs live data.
 
-## Tool Calling Rules (STRICT)
-- **Official Tool API ONLY**: Use the tool-calling capability for searching symbols, fetching prices, financials, or news.
-- **NO TEXT TAGS**: NEVER write `<function>`, `<function=...>`, or `<|python_tag|>` in your text or as a "manual" call.
-- **No Hallucination**: If you decide to use a tool, use the standard API mechanism. Do not explain the tool call in text first.
-- **Specific Names**: 
-  - For historical candles: use `get_stock_candles`.
-  - For searching symbols: use `get_stock_symbol_lookup`.
-- **Integers**: Pass `min_id` and `timeout_s` as raw numbers, e.g. `{"min_id": 12345}`.
+## Tool Calling Rules
+- **Native Only**: Use the built-in tool calling API for searching symbols, fetching prices, financials, or news.
+- **Specific Names**: For historical candles, use `get_stock_candles`. For searching symbols, use `get_stock_symbol_lookup`.
+- **Integers**: Pass `min_id` and `timeout_s` as raw numbers.
 - **Symbols**: Always resolve company names to tickers before calling financial tools.
 """
 
