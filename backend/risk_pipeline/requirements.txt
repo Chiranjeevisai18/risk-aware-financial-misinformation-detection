@@ -16,3 +16,4 @@ groq
 google-generativeai
 python-dotenv
 gunicorn
+lime

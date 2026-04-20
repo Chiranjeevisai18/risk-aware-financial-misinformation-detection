@@ -344,6 +344,7 @@ export default function HomePage() {
                   heuristicTriggered={result.heuristic_triggered}
                   heuristicType={result.heuristic_type}
                   latencyMs={result.latency_ms}
+                  limeFeatures={result.lime_features}
                 />
                 <motion.p
                   initial={{ opacity: 0 }}

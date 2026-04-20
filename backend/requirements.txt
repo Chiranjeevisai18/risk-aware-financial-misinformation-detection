@@ -34,3 +34,5 @@ groq
 google-generativeai
 python-dotenv
 gunicorn
+tavily-python
+lime

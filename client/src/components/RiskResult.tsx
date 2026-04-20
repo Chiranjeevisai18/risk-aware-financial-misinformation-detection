@@ -16,11 +16,13 @@ interface RiskResultProps {
     Misleading: number;
     "High Risk": number;
     Scam: number;
-  };
+  }
   recommendations: string[];
+  limeFeatures?: [string, number][];
   heuristicTriggered: boolean;
   heuristicType: string;
   latencyMs: number;
+
 }
 
 const riskConfig = {
@@ -63,10 +65,10 @@ const riskConfig = {
 };
 
 const probConfig: Record<string, { color: string; bg: string }> = {
-  Safe:       { color: "bg-green-400",  bg: "bg-green-400/20" },
+  Safe: { color: "bg-green-400", bg: "bg-green-400/20" },
   Misleading: { color: "bg-yellow-400", bg: "bg-yellow-400/20" },
-  "High Risk":{ color: "bg-orange-400", bg: "bg-orange-400/20" },
-  Scam:       { color: "bg-red-400",    bg: "bg-red-400/20" },
+  "High Risk": { color: "bg-orange-400", bg: "bg-orange-400/20" },
+  Scam: { color: "bg-red-400", bg: "bg-red-400/20" },
 };
 
 export function RiskResult({
@@ -78,6 +80,7 @@ export function RiskResult({
   keywords = [],
   probabilities,
   recommendations,
+  limeFeatures = [],
   heuristicTriggered,
   heuristicType,
   latencyMs,
@@ -187,6 +190,30 @@ export function RiskResult({
           </ul>
         </div>
       </div>
+
+      {/* ── Row 3: LIME Explanations (Red Flags) ── */}
+      {limeFeatures.length > 0 && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col">
+          <span className="text-xs uppercase tracking-widest text-white/40 mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>AI Feature Influence (Red Flags)</span>
+          <div className="flex flex-wrap gap-2">
+            {limeFeatures.map(([word, weight], i) => (
+              <div
+                key={i}
+                className="px-3 py-1.5 rounded-md text-sm border flex items-center gap-2"
+                style={{
+                  backgroundColor: `rgba(248, 113, 113, ${Math.min(0.2, weight * 0.5)})`,
+                  borderColor: `rgba(248, 113, 113, 0.3)`,
+                  color: "#fca5a5",
+                  fontFamily: "'Sora', sans-serif"
+                }}
+              >
+                <span className="font-medium">{word}</span>
+                <span className="opacity-70 text-xs font-mono text-red-200">+{weight.toFixed(3)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Latency badge ── */}
       <div className="flex justify-end">

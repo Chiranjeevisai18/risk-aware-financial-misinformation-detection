@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Zap, Bot, AlertTriangle, ExternalLink, RefreshCw } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   chatMessage,
   saveChatMessages,
@@ -170,17 +172,6 @@ export function ChatBot({ isOpen, onClose, riskContext }: ChatBotProps) {
   const formatTime = (d: Date) =>
     d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const renderBotText = (text: string | undefined | null) => {
-    if (!text) return null;
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return <strong key={i} className="text-white font-semibold">{part.slice(2, -2)}</strong>;
-      }
-      return <span key={i}>{part}</span>;
-    });
-  };
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -281,9 +272,43 @@ export function ChatBot({ isOpen, onClose, riskContext }: ChatBotProps) {
                       )}
                       <div
                         className="max-w-[90%] px-4 py-3 rounded-2xl rounded-bl-sm text-sm leading-relaxed text-white/85"
-                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", fontFamily: "'Sora', sans-serif", whiteSpace: "pre-wrap" }}
+                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", fontFamily: "'Sora', sans-serif" }}
                       >
-                        {renderBotText(msg.text)}
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            a: ({ node, ...props }) => {
+                              const isUrl = String(props.children).startsWith('http');
+                              return (
+                                <a 
+                                  {...props} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className={isUrl 
+                                    ? "inline-block bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg px-2.5 py-1 text-blue-300 text-[11px] break-all transition-all my-1 mt-0 leading-tight"
+                                    : "text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors decoration-blue-400/30"
+                                  } 
+                                />
+                              )
+                            },
+                            p: ({ node, ...props }) => <p className="mb-3 last:mb-0 whitespace-pre-wrap leading-relaxed" {...props} />,
+                            strong: ({ node, ...props }) => <strong className="text-white font-semibold" {...props} />,
+                            ul: ({ node, ...props }) => <ul className="list-disc list-inside flex flex-col gap-2 my-3 ml-1" {...props} />,
+                            ol: ({ node, ...props }) => <ol className="list-decimal list-inside flex flex-col gap-2 my-4 ml-1 pl-1" {...props} />,
+                            li: ({ node, ...props }) => <li className="text-white/80 leading-relaxed marker:text-white/30 marker:font-mono" {...props} />,
+                            blockquote: ({ node, ...props }) => (
+                              <blockquote className="border-l-2 border-blue-400/50 bg-blue-400/10 pl-4 py-2 opacity-90 my-3 rounded-r-xl text-blue-50 italic text-sm" {...props} />
+                            ),
+                            code: ({ node, ...props }) => (
+                              <code className="bg-black/30 rounded-md px-1.5 py-0.5 font-mono text-[13px] text-blue-200" {...props} />
+                            ),
+                            pre: ({ node, ...props }) => (
+                              <pre className="bg-black/40 border border-white/10 rounded-xl p-3 my-2 overflow-x-auto font-mono text-[13px] text-blue-100" {...props} />
+                            )
+                          }}
+                        >
+                          {msg.text || ""}
+                        </ReactMarkdown>
                       </div>
                       {msg.articles && msg.articles.length > 0 && (
                         <div className="flex flex-col gap-2 w-full">

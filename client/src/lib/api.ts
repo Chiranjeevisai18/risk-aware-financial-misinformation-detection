@@ -53,6 +53,7 @@ export interface ClassifyResponse {
     "High Risk": number;
     Scam: number;
   };
+  lime_features?: [string, number][];
 }
 
 export interface ArticleSummary {
